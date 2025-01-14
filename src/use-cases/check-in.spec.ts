@@ -4,26 +4,27 @@ import { InMemoryGymsRepository } from '@/repositories/in-memory/in-memory-gyms-
 import { CheckInUseCase } from './check-in'
 import { afterEach } from 'node:test'
 import { Decimal } from '@prisma/client/runtime/library'
+import { MaxNumberOfCheckInsError } from './erros/max-number-of-check-ins-error'
+import { MaxDistanceError } from './erros/max-distance-error'
 
 let checkInsRepository: InMemoryCheckInsRepository
 let gymsRepository: InMemoryGymsRepository
 let sut: CheckInUseCase
 
 describe('Get User Profile Use Case', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     checkInsRepository = new InMemoryCheckInsRepository()
     gymsRepository = new InMemoryGymsRepository()
     sut = new CheckInUseCase(checkInsRepository, gymsRepository)
 
-    gymsRepository.items.push({
+    await gymsRepository.create({
       id: 'gym-01',
       title: 'Test Vitest',
       description: "",
       phone: '',
-      latitude: new Decimal(0),
-      longitude: new Decimal(0),
+      latitude: -15.7785418,
+      longitude: -48.5348765,
     })
-
 
     vi.useFakeTimers()
   })
@@ -36,8 +37,8 @@ describe('Get User Profile Use Case', () => {
     const { checkIn } = await sut.execute({
       gymId: 'gym-01',
       userId: 'user-01',
-      userLatitude: 0,
-      userLongitude: 0,
+      userLatitude: -15.7785418,
+      userLongitude: -48.5348765,
     })
 
     expect(checkIn.id).toEqual(expect.any(String))
@@ -49,16 +50,16 @@ describe('Get User Profile Use Case', () => {
     await sut.execute({
       gymId: 'gym-01',
       userId: 'user-01',
-      userLatitude: 0,
-      userLongitude: 0,
+      userLatitude: -15.7785418,
+      userLongitude: -48.5348765,
     })
 
     await expect(sut.execute({
       gymId: 'gym-01',
       userId: 'user-01',
-      userLatitude: 0,
-      userLongitude: 0,
-    })).rejects.toBeInstanceOf(Error)
+      userLatitude: -15.7785418,
+      userLongitude: -48.5348765,
+    })).rejects.toBeInstanceOf(MaxNumberOfCheckInsError)
   })
 
   it('should be able to do check in twice but in different days', async () => {
@@ -67,8 +68,8 @@ describe('Get User Profile Use Case', () => {
     await sut.execute({
       gymId: 'gym-01',
       userId: 'user-01',
-      userLatitude: 0,
-      userLongitude: 0,
+      userLatitude: -15.7785418,
+      userLongitude: -48.5348765,
     })
 
     vi.setSystemTime(new Date(2022, 0, 21, 8, 0, 0))
@@ -76,8 +77,8 @@ describe('Get User Profile Use Case', () => {
     const { checkIn } = await sut.execute({
       gymId: 'gym-01',
       userId: 'user-01',
-      userLatitude: 0,
-      userLongitude: 0,
+      userLatitude: -15.7785418,
+      userLongitude: -48.5348765,
     })
 
     expect(checkIn.id).toEqual(expect.any(String))
@@ -98,6 +99,6 @@ describe('Get User Profile Use Case', () => {
       userId: 'user-01',
       userLatitude: -15.7785418,
       userLongitude: -48.5348765,
-    })).rejects.toBeInstanceOf(Error)
+    })).rejects.toBeInstanceOf(MaxDistanceError)
   })
 })
